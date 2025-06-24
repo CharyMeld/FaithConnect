@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: faith-connect
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn faith_connect.wsgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: faith_connect.settings
+      - key: charymeld
+        value: your-secret-key
+      - key: DEBUG
+        value: False
+
