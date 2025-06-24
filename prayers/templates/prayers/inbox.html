@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prayer Inbox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        fade: "fadeIn 0.3s ease-in-out",
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            "0%": { opacity: "0", transform: "scale(0.95)" },
+                            "100%": { opacity: "1", transform: "scale(1)" },
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/@heroicons/vue@2.0.16/24/outline/index.umd.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+<div class="max-w-7xl mx-auto px-6 py-10">
+    <h1 class="text-4xl font-bold text-center text-blue-700 mb-8">Prayer Requests Inbox</h1>
+
+    <!-- Search -->
+    <form method="get" class="flex flex-col md:flex-row gap-4 justify-center items-center mb-6">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search name or email"
+               class="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-400 focus:outline-none">
+        <button type="submit" class="flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 4H6a2 2 0 00-2 2v16h16V6a2 2 0 00-2-2h-2" />
+            </svg> Search
+        </button>
+    </form>
+
+    <!-- Messages -->
+    {% if messages %}
+        <ul class="mb-6">
+            {% for message in messages %}
+                <li class="p-3 mb-2 rounded-md font-medium
+                    {% if message.tags == 'success' %}bg-green-100 text-green-800
+                    {% elif message.tags == 'error' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ message }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if prayers %}
+        <!-- Table -->
+        <div class="overflow-x-auto bg-white shadow-md rounded-lg">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-blue-600 text-white text-left">
+                    <tr>
+                        <th class="px-6 py-3">Name</th>
+                        <th class="px-6 py-3">Email</th>
+                        <th class="px-6 py-3">Date</th>
+                        <th class="px-6 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm md:text-base">
+                {% for prayer in prayers %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">{{ prayer.name }}</td>
+                        <td class="px-6 py-4">{{ prayer.email }}</td>
+                        <td class="px-6 py-4">{{ prayer.created_at|date:"M d, Y H:i" }}</td>
+                        <td class="px-6 py-4 space-y-2">
+
+                            <!-- View Message Modal Trigger -->
+                            <button onclick="openModal({{ forloop.counter }})"
+                                    class="flex items-center text-blue-600 hover:underline">
+                                <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A2 2 0 0122 9.618V16a2 2 0 01-2 2H6a2 2 0 01-2-2V9.618a2 2 0 012.447-1.894L11 10" />
+                                </svg>
+                                View
+                            </button>
+
+                            <!-- Mark as Prayed -->
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" {% if prayer.is_prayed %}checked{% endif %}
+                                       onclick="togglePrayed({{ prayer.id }})"
+                                       class="form-checkbox h-5 w-5 text-green-500">
+                                <span class="text-sm">Prayed</span>
+                            </label>
+
+                            <!-- Reply -->
+                            <form method="post" action="{% url 'prayers:reply_prayer' %}" class="mt-2">
+                                {% csrf_token %}
+                                <input type="hidden" name="to_email" value="{{ prayer.email }}">
+                                <textarea name="reply_message" required
+                                          class="w-full mt-1 p-2 border rounded-md focus:ring focus:ring-blue-300"
+                                          placeholder="Reply message..."></textarea>
+                                <button type="submit"
+                                        class="bg-green-600 hover:bg-green-700 text-white mt-2 px-4 py-2 rounded-md w-full transition">
+                                    Send Reply
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <!-- Modal -->
+                    <div id="modal-{{ forloop.counter }}"
+                         class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+                        <div class="bg-white rounded-lg p-6 w-full max-w-lg shadow-lg animate-fade relative">
+                            <button onclick="closeModal({{ forloop.counter }})"
+                                    class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+                            <h2 class="text-xl font-bold mb-4 text-blue-700">Prayer Message</h2>
+                            <p>{{ prayer.message }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination + Export -->
+        <div class="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
+            <a href="{% url 'prayers:export_prayers_csv' %}"
+               class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-md shadow">
+                Export to CSV
+            </a>
+
+            <div class="flex items-center space-x-3">
+                {% if prayers.has_previous %}
+                    <a href="?q={{ query }}&page={{ prayers.previous_page_number }}"
+                       class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-md">Previous</a>
+                {% endif %}
+                <span class="px-4 py-2 bg-blue-600 text-white rounded-md">Page {{ prayers.number }} of {{ prayers.paginator.num_pages }}</span>
+                {% if prayers.has_next %}
+                    <a href="?q={{ query }}&page={{ prayers.next_page_number }}"
+                       class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-md">Next</a>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <p class="text-center text-gray-500 mt-10 text-lg">No prayer requests found.</p>
+    {% endif %}
+</div>
+
+<!-- JS -->
+<script>
+    function openModal(id) {
+        const modal = document.getElementById(`modal-${id}`);
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(`modal-${id}`);
+        modal.classList.add("hidden");
+    }
+
+    function togglePrayed(prayerId) {
+        fetch("{% url 'prayers:mark_prayed' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `prayer_id=${prayerId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Marked as prayed:', data);
+        });
+    }
+</script>
+
+</body>
+</html>
+

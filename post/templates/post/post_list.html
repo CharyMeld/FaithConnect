@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="fw-bold">All Posts</h1>
+        <a href="{% url 'post:create_post' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create New Post
+        </a>
+    </div>
+
+    {% if posts %}
+        <div class="row g-4">
+            {% for post in posts %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ post.author.username }}</h5>
+                            <p class="card-text">{{ post.content }}</p>
+
+                                {% if post.media_files %}
+                                  {% with post.media_files.url|lower as file_url %}
+                                      {% if ".jpg" in file_url or ".jpeg" in file_url or ".png" in file_url %}
+                                          <img src="{{ post.media_files.url }}" class="img-fluid rounded mb-2" alt="Post image">
+                                      {% elif ".mp4" in file_url or ".webm" in file_url %}
+                                          <video controls class="w-100 rounded mb-2">
+                                              <source src="{{ post.media_files.url }}" type="video/mp4">
+                                              Your browser does not support the video tag.
+                                          </video>
+                                      {% else %}
+                                          <a href="{{ post.media_files.url }}" target="_blank" class="btn btn-outline-secondary mb-2">
+                                              📄 {{ post.media_files.name }}
+                                          </a>
+                                      {% endif %}
+                                  {% endwith %}
+                              {% endif %}
+
+
+                            <p class="text-muted mt-auto" style="font-size: 0.85rem;">
+                                Posted on: {{ post.created_at|date:"M d, Y H:i" }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            No posts yet.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,339 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Faith Connect{% endblock %}</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+  <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" />
+
+  <style>
+    /* Gradient animated background */
+    body {
+      background: linear-gradient(-45deg, #e1bee7, #c5cae9, #b2ebf2, #dcedc8);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Verse container */
+    #random-verse-container {
+      max-width: 700px;
+      margin: 3rem auto;
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      border-radius: 20px;
+      transition: transform 0.8s ease, opacity 0.8s ease;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #verse-text {
+      font-size: 1.8rem;
+      font-style: italic;
+      color: #333;
+      min-height: 4rem;
+      white-space: pre-wrap;
+    }
+
+    #verse-ref {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #6c757d;
+      text-align: right;
+    }
+
+    @media (max-width: 576px) {
+      #random-verse-container {
+        padding: 1.5rem;
+        margin: 1.5rem;
+      }
+      #verse-text {
+        font-size: 1.4rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #4B0082;">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="{% url 'core:home' %}">
+        <i class="fas fa-cross me-2"></i><span>Faith Connect</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'core:home' %}"><i class="fas fa-home me-1"></i> Home</a>
+          </li>
+          {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'core:dashboard' %}"><i class="fas fa-user me-1"></i> Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'core:logout' %}"><i class="fas fa-sign-out-alt me-1"></i> Logout</a>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'core:login' %}"><i class="fas fa-sign-in-alt me-1"></i> Login</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'core:register' %}"><i class="fas fa-user-plus me-1"></i> Register</a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+ <!-- Full dynamic Bible verse UI with sound themes, volume control, mute toggle -->
+
+<div class="container text-center mt-5">
+  <div id="random-verse-container" class="animated-card p-4 rounded shadow">
+    <p id="verse-text" class="h4 mb-3">Loading...</p>
+    <p id="verse-ref" class="fw-bold"></p>
+  </div>
+
+  <div class="controls mt-4">
+    <label for="sound-theme" class="me-2 fw-bold">Sound Theme:</label>
+    <select id="sound-theme" class="form-select d-inline w-auto">
+      <option value="calm" selected>Calm</option>
+      <option value="joyful">Joyful</option>
+      <option value="energetic">Energetic</option>
+    </select>
+
+    <label for="volume" class="ms-4 me-2 fw-bold">Volume:</label>
+    <input type="range" id="volume" min="0" max="1" step="0.1" value="1">
+
+    <button id="mute-btn" class="btn btn-warning ms-3">Mute</button>
+  </div>
+</div>
+
+<audio id="verse-sound" preload="auto"></audio>
+
+<script>
+const soundThemes = {
+  calm: [
+    '{% static "sounds/calm/chime1.mp3" %}',
+    '{% static "sounds/calm/harp1.mp3" %}',
+    '{% static "sounds/calm/bell1.mp3" %}'
+  ],
+  joyful: [
+    '{% static "sounds/joyful/bell1.mp3" %}',
+    '{% static "sounds/joyful/bell2.mp3" %}',
+    '{% static "sounds/joyful/cheer1.mp3" %}'
+  ],
+  energetic: [
+    '{% static "sounds/energetic/snap1.mp3" %}',
+    '{% static "sounds/energetic/clap1.mp3" %}',
+    '{% static "sounds/energetic/pop1.mp3" %}'
+  ]
+};
+
+const soundThemeSelect = document.getElementById('sound-theme');
+const volumeSlider = document.getElementById('volume');
+const muteBtn = document.getElementById('mute-btn');
+const verseSound = document.getElementById('verse-sound');
+let isMuted = false;
+let userHasInteracted = false; // Flag to track user interaction
+
+// Function to attempt playing sound safely
+function playSoundSafely() {
+  if (userHasInteracted && !verseSound.muted && verseSound.src) {
+    verseSound.play().catch(error => {
+      console.error("Error playing sound:", error);
+      // Optionally disable sound features if playback consistently fails
+    });
+  }
+}
+
+// --- Event Listeners --- 
+
+volumeSlider.addEventListener('input', () => {
+  verseSound.volume = volumeSlider.value;
+  userHasInteracted = true; // Interaction detected
+});
+
+muteBtn.addEventListener('click', () => {
+  isMuted = !isMuted;
+  verseSound.muted = isMuted;
+  muteBtn.textContent = isMuted ? 'Unmute' : 'Mute';
+  userHasInteracted = true; // Interaction detected
+  if (!isMuted) {
+    // Optional: Play sound immediately when unmuting if a verse is loaded
+    playSoundSafely(); 
+  }
+});
+
+soundThemeSelect.addEventListener('change', () => {
+    userHasInteracted = true; // Interaction detected
+    // Optional: Load and play a sound for the new theme immediately
+    const selectedTheme = soundThemeSelect.value;
+    const randomSound = getRandomSound(selectedTheme);
+    if (randomSound) {
+        verseSound.src = randomSound;
+        verseSound.currentTime = 0;
+        playSoundSafely();
+    }
+});
+
+// Add a general interaction listener (optional but recommended)
+document.body.addEventListener('click', () => {
+    userHasInteracted = true;
+}, { once: true }); // Only need to capture the first interaction
+
+
+// --- Verse Fetching Logic --- 
+
+function getRandomSound(theme) {
+  const sounds = soundThemes[theme] || [];
+  if (sounds.length === 0) return null; // Handle empty theme
+  return sounds[Math.floor(Math.random() * sounds.length)];
+}
+
+async function fetchRandomVerse() {
+  const verseContainer = document.getElementById('random-verse-container');
+  const verseText = document.getElementById('verse-text');
+  const verseRef = document.getElementById('verse-ref');
+
+  verseContainer.style.opacity = 0;
+  verseContainer.style.transform = 'translateY(-20px)';
+
+  try {
+    const response = await fetch('/api/random-verse/'); // Make sure this URL is correct
+    if (!response.ok) throw new Error('Network response was not ok');
+    const data = await response.json();
+
+    // Use setTimeout only for the visual update, not for playing sound
+    setTimeout(() => {
+      typeText(verseText, `"${data.text}"`);
+      verseRef.textContent = `${data.book} ${data.chapter}:${data.verse}`;
+
+      // Load the sound, but DO NOT play it automatically
+      const selectedTheme = soundThemeSelect.value;
+      const randomSound = getRandomSound(selectedTheme);
+      if (randomSound) {
+          verseSound.src = randomSound; 
+          verseSound.currentTime = 0;
+          // --- REMOVED verseSound.play() from here --- 
+      }
+
+      verseContainer.style.opacity = 1;
+      verseContainer.style.transform = 'translateY(0)';
+    }, 800); // Delay for visual effect
+
+  } catch (error) {
+    setTimeout(() => {
+      typeText(verseText, 'Failed to load verse.');
+      verseRef.textContent = '';
+      verseContainer.style.opacity = 1;
+      verseContainer.style.transform = 'translateY(0)';
+    }, 800);
+    console.error('Error fetching verse:', error);
+  }
+}
+
+function typeText(element, text, speed = 50) {
+  element.textContent = '';
+  let i = 0;
+  function type() {
+    if (i < text.length) {
+      element.textContent += text.charAt(i);
+      i++;
+      setTimeout(type, speed); // This use of setTimeout is fine for CSP
+    }
+  }
+  type();
+}
+
+// Initial fetch
+fetchRandomVerse();
+
+// Subsequent fetches (sound won't play automatically)
+setInterval(fetchRandomVerse, 10000); 
+
+</script>
+
+<style>
+.animated-card {
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+  transition: all 0.5s ease;
+}
+
+body {
+  background: radial-gradient(circle at top left, #ffecd2, #fcb69f);
+  animation: bgPulse 10s infinite alternate;
+}
+
+@keyframes bgPulse {
+  from { background: radial-gradient(circle at top left, #ffecd2, #fcb69f); }
+  to { background: radial-gradient(circle at bottom right, #c2e9fb, #a1c4fd); }
+}
+</style>
+
+
+  <!-- Main Content -->
+  <main class="container mt-4">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-white pt-5 pb-4 mt-5" style="background-color: #4B0082;">
+    <div class="container text-md-left">
+      <div class="row text-md-left">
+        <section class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
+          <h5 class="text-uppercase mb-4 fw-bold">Faith Connect</h5>
+          <p>A Christian social platform to connect, share, and grow together in faith and fellowship.</p>
+        </section>
+        <section class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3">
+          <h5 class="text-uppercase mb-4 fw-bold">Quick Links</h5>
+          <p><a href="{% url 'core:home' %}" class="text-white text-decoration-none">Home</a></p>
+          <p><a href="{% url 'core:about' %}" class="text-white text-decoration-none">About</a></p>
+          <p><a href="{% url 'core:blog' %}" class="text-white text-decoration-none">Blog</a></p>
+          <p><a href="{% url 'core:contact' %}" class="text-white text-decoration-none">Contact</a></p>
+        </section>
+        <section class="col-md-3 col-lg-2 col-xl-2 mx-auto mt-3">
+          <h5 class="text-uppercase mb-4 fw-bold">Resources</h5>
+          <p><a href="#" class="text-white text-decoration-none">Privacy Policy</a></p>
+          <p><a href="#" class="text-white text-decoration-none">Terms of Service</a></p>
+          <p><a href="#" class="text-white text-decoration-none">FAQs</a></p>
+          <p><a href="#" class="text-white text-decoration-none">Support</a></p>
+        </section>
+        <section class="col-md-4 col-lg-3 col-xl-3 mx-auto mt-3">
+          <h5 class="text-uppercase mb-4 fw-bold">Contact</h5>
+          <p><i class="fas fa-home me-3"></i> Lagos, Nigeria</p>
+          <p><i class="fas fa-envelope me-3"></i> support@faithconnect.com</p>
+          <p><i class="fas fa-phone me-3"></i> +234 812 345 6789</p>
+        </section>
+      </div>
+      <hr class="mb-4" />
+      <div class="row text-center">
+        <div class="col">
+          <p>&copy; 2025 Faith Connect. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

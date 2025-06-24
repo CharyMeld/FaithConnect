@@ -1,0 +1,22 @@
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 40px;
+}
+nav a {
+    margin-right: 15px;
+    text-decoration: none;
+    font-weight: bold;
+}
+form {
+    max-width: 400px;
+}
+button {
+    padding: 8px 16px;
+    background-color: #1976D2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+

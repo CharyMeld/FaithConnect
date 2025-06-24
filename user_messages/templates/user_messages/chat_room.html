@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-end mb-3">
+  <a href="{% url 'user_messages:create_group' %}" class="btn btn-outline-primary me-2 d-flex align-items-center">
+    <i class="bi bi-people-fill me-1"></i> Create Group
+  </a>
+  <a href="{% url 'user_messages:start_one_on_one' %}" class="btn btn-outline-success d-flex align-items-center">
+    <i class="bi bi-chat-dots-fill me-1"></i> One-on-One Chat
+  </a>
+</div>
+
+<h2>{{ room.name }}</h2>
+
+<div id="messages" class="border p-3 mb-3" style="height: 300px; overflow-y: scroll;">
+  {% for message in messages %}
+    <div>
+      <strong>{{ message.sender.username }}:</strong> {{ message.content }} 
+      <small>{{ message.timestamp|time:"H:i" }}</small>
+      <span id="read-{{ message.id }}">
+        {% if request.user in message.read_by.all %}
+          Read
+        {% else %}
+          Unread
+        {% endif %}
+      </span>
+    </div>
+  {% empty %}
+    <p>No messages yet.</p>
+  {% endfor %}
+</div>
+
+<form id="chat-form" class="d-flex">
+  <input type="text" id="message-input" class="form-control me-2" placeholder="Type message..." autocomplete="off" />
+  <button type="submit" class="btn btn-primary">Send</button>
+</form>
+
+<script>
+  const roomId = '{{ room.id }}';
+  const username = '{{ request.user.username }}';
+  const chatSocket = new WebSocket(
+    (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/chat/' + roomId + '/'
+  );
+
+  document.getElementById('chat-form').onsubmit = function(e) {
+    e.preventDefault();
+    const input = document.getElementById('message-input');
+    const message = input.value.trim();
+    if (message.length === 0) return;
+    chatSocket.send(JSON.stringify({
+      'type': 'message',
+      'message': message,
+      'username': username
+    }));
+    input.value = '';
+  };
+
+  chatSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    if (data.type === 'message') {
+      const msgBox = document.getElementById('messages');
+      const newMsg = document.createElement('div');
+      newMsg.innerHTML = `<strong>${data.username}:</strong> ${data.message} <small>${data.timestamp}</small> <span id="read-${data.message_id}">Unread</span>`;
+      msgBox.appendChild(newMsg);
+      msgBox.scrollTop = msgBox.scrollHeight;
+
+      // Send read receipt back
+      chatSocket.send(JSON.stringify({
+        'type': 'read',
+        'message_id': data.message_id,
+        'username': username
+      }));
+    } else if (data.type === 'read') {
+      const readTag = document.getElementById(`read-${data.message_id}`);
+      if (readTag) {
+        readTag.innerText = `Read by ${data.username}`;
+      }
+    }
+  };
+
+  chatSocket.onclose = function(e) {
+    console.error('Chat socket closed unexpectedly');
+  };
+</script>
+{% endblock %}
+

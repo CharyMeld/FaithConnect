@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- Button to trigger Login Modal -->
+<div class="text-center my-4">
+    <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#loginModal">
+        Login
+    </button>
+</div>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="loginModalLabel">Login</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <form method="post" action="{% url 'core:login' %}">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <div class="d-grid mt-3">
+            <button type="submit" class="btn btn-primary btn-lg">Login</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <small class="mx-auto">Don't have an account? <a href="{% url 'core:register' %}">Register here</a></small>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+

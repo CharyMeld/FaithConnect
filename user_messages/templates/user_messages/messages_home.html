@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="d-flex justify-content-end mb-3">
+  <a href="{% url 'user_messages:create_group' %}" class="btn btn-outline-primary me-2 d-flex align-items-center">
+    <i class="bi bi-people-fill me-1"></i> Create Group
+  </a>
+  <a href="{% url 'user_messages:start_one_on_one' %}" class="btn btn-outline-success d-flex align-items-center">
+    <i class="bi bi-chat-dots-fill me-1"></i> One-on-One Chat
+  </a>
+</div>
+
+<h2>Your Groups</h2>
+<ul class="list-group">
+  {% for group in groups %}
+    <li class="list-group-item">
+      <a href="{% url 'user_messages:chat_room' group.id %}">{{ group.name }}</a>
+    </li>
+  {% empty %}
+    <li class="list-group-item">You are not in any groups yet.</li>
+  {% endfor %}
+</ul>
+
+{% endblock %}
+

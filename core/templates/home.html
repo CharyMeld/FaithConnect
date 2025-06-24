@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <!-- Welcome Section -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">Welcome to Faith Connect</h1>
+        <p class="lead text-muted">A social network for the Christian community to connect, share, and grow together in faith.</p>
+        <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+            <a href="{% url 'core:login' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-sign-in-alt me-1"></i> Login
+            </a>
+            <a href="{% url 'core:register' %}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-user-plus me-1"></i> Register
+            </a>
+        </div>
+    </div>
+
+<!-- Display posts on dashboard or home page -->
+<div class="mt-4">
+    <h3>Recent Posts</h3>
+    {% for post in posts %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5>{{ post.title }}</h5>
+                <p>{{ post.description }}</p>
+                <!-- add media, author, date, etc. -->
+            </div>
+        </div>
+    {% empty %}
+        <p>No posts available.</p>
+    {% endfor %}
+</div>
+
+
+{% endblock %}
+

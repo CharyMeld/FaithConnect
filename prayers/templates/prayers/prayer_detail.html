@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>{{ prayer.title }} - Prayer Detail</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+        .card {
+            border-radius: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 2rem;
+            background: #fff;
+            margin-top: 2rem;
+        }
+        .response-item {
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .response-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h2 class="mb-3">{{ prayer.title }}</h2>
+        <p class="mb-1"><strong>Requested by:</strong> {{ prayer.user.username }}</p>
+        <p>{{ prayer.message|linebreaks }}</p>
+        <p><small class="text-muted">Requested on {{ prayer.created_at|date:"M d, Y H:i" }}</small></p>
+
+        <hr>
+
+        <h4>Responses</h4>
+        {% if responses %}
+            <ul class="list-unstyled">
+                {% for response in responses %}
+                    <li class="response-item">
+                        <strong>{{ response.sender.username }}</strong>: {{ response.message|linebreaks }}<br />
+                        <small class="text-muted">on {{ response.created_at|date:"M d, Y H:i" }}</small>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">No responses yet.</p>
+        {% endif %}
+
+        <div class="mt-4">
+            <a href="{% url 'prayers:send_response' prayer.pk %}" class="btn btn-primary me-2">✉️ Send Response</a>
+            <a href="{% url 'prayers:prayers_page' %}" class="btn btn-secondary">← Back to Prayers</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
